@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shawarma Horror - FPV Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI Overlays */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            font-size: 24px;
+        }
+
+        #mistakeCounter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        #scoreCounter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        #customerInfo {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 300px;
+            border: 2px solid #00ff00;
+            pointer-events: auto;
+        }
+
+        #customerInfo h3 {
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .customer-clues {
+            margin: 10px 0;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .customer-clues p {
+            margin: 5px 0;
+        }
+
+        .clue-human {
+            color: #00ff00;
+        }
+
+        .clue-monster {
+            color: #ff6600;
+        }
+
+        #actionButtons {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        #serveBtn {
+            background: #00ff00;
+            color: #000;
+        }
+
+        #serveBtn:hover {
+            background: #00cc00;
+            transform: scale(1.05);
+        }
+
+        #accuseBtn {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        #accuseBtn:hover {
+            background: #cc0000;
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: scale(1) !important;
+        }
+
+        #jumpScare {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            pointer-events: none;
+            font-size: 60px;
+            font-weight: bold;
+            animation: scareFlash 0.5s;
+        }
+
+        @keyframes scareFlash {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        #gameOverScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+
+        #gameOverScreen h1 {
+            font-size: 80px;
+            margin-bottom: 30px;
+            color: #ff4444;
+            text-shadow: 0 0 20px #ff0000;
+        }
+
+        #gameOverScreen p {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        #gameOverScreen button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #00ff00;
+            color: #000;
+        }
+
+        #instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 600px;
+            z-index: 3000;
+            display: none;
+            pointer-events: auto;
+            border: 3px solid #00ff00;
+        }
+
+        #instructions h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #00ff00;
+        }
+
+        #instructions ul {
+            list-style: none;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        #instructions li {
+            margin: 10px 0;
+        }
+
+        #instructions button {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="canvas"></canvas>
+        <div id="hud">
+            <div id="mistakeCounter">❌ Mistakes: <span id="mistakeCount">0</span>/5</div>
+            <div id="scoreCounter">✓ Correct Serves: <span id="scoreCount">0</span></div>
+            <div id="customerInfo" class="hidden">
+                <h3 id="customerName">Customer</h3>
+                <div class="customer-clues">
+                    <p id="clue1"></p>
+                    <p id="clue2"></p>
+                </div>
+            </div>
+            <div id="actionButtons" class="hidden">
+                <button id="serveBtn">SERVE SHAWARMA</button>
+                <button id="accuseBtn">ACCUSE MONSTER</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="jumpScare">😱 AAHHHHH! 😱</div>
+    <div id="gameOverScreen">
+        <h1>GAME OVER</h1>
+        <p id="gameOverText">You got caught!</p>
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <button onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+    <div id="instructions">
+        <h2>🌯 SHAWARMA HORROR 🌯</h2>
+        <ul>
+            <li>✓ Serve shawarmas to HUMANS</li>
+            <li>✗ ACCUSE disguised MONSTERS</li>
+            <li>📝 Read the clues carefully!</li>
+            <li>🚨 3+ incorrect serves = JUMP SCARE!</li>
+            <li>5 mistakes = GAME OVER</li>
+            <li>✓ Click PLAY to start</li>
+        </ul>
+        <button id="playBtn" style="background: #00ff00; color: #000;">PLAY</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
